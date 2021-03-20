@@ -1,5 +1,7 @@
 from random import randrange, getrandbits
+from math import log, modf
 
+#Тест Миллера - Рабина
 def MR_Test(n, k=128):
     # Если число 2 или 3, то сразу простое
     if n == 2 or n == 3:
@@ -39,6 +41,7 @@ def generatePrimeNum(length):
         p = generatePrimeCadidate(length)
     return p
 
+#Алгоритм Гордона по генерации сильного простого числа
 def getStrongPrime(length):
     s = generatePrimeNum(length)
     t = generatePrimeNum(length)
@@ -58,27 +61,51 @@ def getStrongPrime(length):
     return [r,p]
 
 
-def getSqrtQuadric(a, p):
+def getSqrtModAnother(a, p):
+    m = pow(a,1,p)
+    if m==(p-1):
+        print("Решений нет")
+        exit
+
+    b = 0
+    while 1:
+        if pow(b,(p-1)//2,p) == p-1:
+            break
+        b = randrange(p-1)
+
+    t=3
+    s=1
+    # p-1 =2^s + t
+    while 1:
+        if (p-1) % t == 0:
+            base = (p-1) // t
+            if log(base, 2) % 1 == 0:
+                s = int(log(base, 2))
+                base = 2
+                break
+        t+=2
+
+    #################
+
+def getSqrtMod(a, p):
     R1 = pow(a,(p-1)//2,p)
     S = (p-1)//2
     R2 = 1
     Z = 0
 
-    
     b = 0
     while 1:
-        if(pow(b,(p-1)//2,p) == p-1):
+        if pow(b,(p-1)//2,p) == p-1:
             break
-        else: 
-            b = randrange(p-1)
+        b = randrange(p-1)
 
     P=0
     x=0
     while 1:
         P=pow(R1*R2,1,p)
-
-        if(P == 1):
-            if(S%2==0):
+        # print(P)
+        if P == 1 :
+            if S%2==0:
                 S=S//2
                 Z=Z//2
                 R1=pow(a,S,p)
@@ -86,20 +113,19 @@ def getSqrtQuadric(a, p):
             else:
                 break
         else:
-            p=-1
             Z=Z+(p-1)//2
 
-            if(S%2==0):
+            if S%2==0:
                 S=S//2
                 Z=Z//2
                 R1=pow(a,S,p)
                 R2=pow(b,Z,p)
             else:
                 break
-    
+            
     S=(S+1)//2
     Z=Z//2
-    x=pow(pow(a,S)*pow(b,Z),1,p)
+    x=pow(pow(a,S,p)*pow(b,Z,p),1,p)
 
     return x
 
@@ -107,8 +133,8 @@ def getSqrtQuadric(a, p):
 def getOpenKey(a, x, p):
     return pow(a,x,p)
 
-def getU(p):
-    return randrange(p-1)
+# def getU(p):
+#     return randrange(p-1)
 
 def getA(gamma, p):
     print("Идёт вычисление параметра а...")
@@ -123,11 +149,7 @@ def getZ(a, U, p):
     return pow(a, U, p)
 
 def getK(U, h, x, Z, gamma):
-    valForSqrt = h*h*U*U - 4*h*x*Z
-    
-    k = pow((h*U + getSqrtQuadric(valForSqrt, gamma))//2*h,1,gamma)
-
-    return k
+    return pow((h*U + getSqrtMod(pow(h,2,gamma)*pow(U,2,gamma) - 4*h*x*Z, gamma))*pow(2*h,-1,gamma),1,gamma)
 
 def getG(U,k,gamma):
     return pow(U-k,1,gamma)
@@ -135,34 +157,39 @@ def getG(U,k,gamma):
 def getS(a,g,p):
     return pow(a,g,p)
 
-def getLeft(S, h, k, p):
-    return pow(S, h * k, p) 
+def getLeft(S, h, k, p, g):
+    return pow(g*h*k,1,p)
+    # return pow(S, h*k, p) 
 
-def getRight(y, S, a, k, p):
-    return pow(y,pow(S*pow(a,k),1,p),p)
+def getRight(y,S,a,k,p,Z,h):
+    return pow(Z*h,1,p)
+    # return pow(y,S*pow(a,k,p),p)
 
 def init():
+    countBits = 4
+
     #Получение значения гаммы
-    [gamma,p] = getStrongPrime(3); 
+    [gamma,p] = getStrongPrime(countBits); 
+    # gamma = 187266130527359358103409790533
+    # p = 1188242948802635102242772106637989280357
     print("gamma = ", gamma)
     print("p = ", p)
 
-    #Получение значение p
-    # p = getStrongPrime(16)
-    # print("p = ", p)
-
     #Выберем секретный ключ X
-    x = getrandbits(3)
+    x = getrandbits(countBits)
+    # x = 12345678900987654321
     print("x = ", x)
 
     #Выберем случайный хеш сообшения
-    h = getrandbits(3)
+    h = getrandbits(countBits)
+    # h = 11223344556677889900
     print("h = ", h)
 
     # Выбираем значение альфа
     # а - число, относящееся к некоторому простому показателю гамма по модулю p
     # то есть нужно выбрать такое a, которое в степени gamma по модулю p будет давать 1 
     a = getA(gamma,p)
+    # a = 682502200821353544223897742429626534895
     print("a = ", a)
 
     # Вычисляем открытый ключ
@@ -170,7 +197,9 @@ def init():
     print("y = ", y)
 
     # Вычисляем значение U
-    U = getU(p)
+    # U = getU(p)
+    U = getrandbits(countBits)
+    # U = 13894564231549754238457865456
     print("U = ", U)
     
     # Вычисляем значение Z
@@ -193,11 +222,11 @@ def init():
 
     # Проверка подписи...
     
-    leftSideValue = getLeft(S,h,k,p)
+    leftSideValue = getLeft(S, h, k, p, g)
     print("Side 1st = ", leftSideValue)
 
-    rightSideValue = getRight(y, S, a, k, p)
+    rightSideValue = getRight(y,S,a,k,p,Z,h)
     print("Side 2nd = ", rightSideValue)
     
-    print("Done value = ", x * Z);
+    # print("Done value = ", pow(x*Z,1,p))
 init()
