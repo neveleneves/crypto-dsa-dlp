@@ -1,5 +1,4 @@
 from random import randrange, getrandbits
-from math import log
 
 #Тест Миллера - Рабина
 def MR_Test(n, k=128):
@@ -41,6 +40,7 @@ def generatePrimeNum(length):
         p = generatePrimeCadidate(length)
     return p
 
+#Получение значения гаммы и p
 #Алгоритм Гордона по генерации сильного простого числа
 def getStrongPrime(length):
     s = generatePrimeNum(length)
@@ -61,32 +61,7 @@ def getStrongPrime(length):
 
     return [r,p]
 
-
-# def getSqrtModAnother(a, p):
-#     m = pow(a,1,p)
-#     if m==(p-1):
-#         print("Решений нет")
-#         exit
-
-#     b = 0
-#     while 1:
-#         if pow(b,(p-1)//2,p) == p-1:
-#             break
-#         b = randrange(p-1)
-
-#     t=3
-#     s=1
-#     # p-1 =2^s + t
-#     while 1:
-#         if (p-1) % t == 0:
-#             base = (p-1) // t
-#             if log(base, 2) % 1 == 0:
-#                 s = int(log(base, 2))
-#                 base = 2
-#                 break
-#         t+=2
-#     #################
-
+# Функция для нахождения квадратного корня по модулю
 def getSqrtMod(a, p):
     R1 = pow(a,(p-1)//2,p)
     S = (p-1)//2
@@ -103,7 +78,6 @@ def getSqrtMod(a, p):
     x=0
     while 1:
         P=pow(R1*R2,1,p)
-        # print(P)
         if P == 1 :
             if S%2==0:
                 S=S//2
@@ -129,15 +103,17 @@ def getSqrtMod(a, p):
 
     return x
 
-
+# Вычисляем значение открытого ключа
 def getOpenKey(a, x, p):
     return pow(a,x,p)
 
+# Выбираем значение U
 def getU(p):
     return randrange(p-1)
 
+# Выбираем значение альфа
 def getA(gamma, p):
-    print("Идёт вычисление параметра а...")
+    print("\nИдёт вычисление параметра а...")
     a=2
     m=0
     while not m==1:
@@ -145,39 +121,45 @@ def getA(gamma, p):
         m = pow(a,gamma,p)
     return a
 
+# Вычисляем значение Z
 def getZ(a, U, p):
     return pow(a, U, p)
 
+# Вычисляем параметр k
 def getK(U, h, x, Z, gamma, sqrtModValue):
-    print("Идёт вычисление параметра k...")
     return pow((pow(h*U,1,gamma) - sqrtModValue) * inverse(2*h,gamma),1,gamma)
 
+# Вычисляем параметр g
 def getG(U,k,gamma):
     return pow(U-k,1,gamma)
 
+# Вычисляем параметр S
 def getS(a,g,p):
     return pow(a,g,p)
 
+# Вычисляем левую часть проверочного сравнения
 def getLeft(S, h, k, p, g):
-    # return pow(g*h*k,1,p)
     return pow(S, h*k, p)  
 
+# Вычисляем правую часть проверочного сравнения
 def getRight(y,S,a,k,p,Z,h):
-    # return pow(Z*h,1,p)
     return pow(y,pow(S*pow(a,k,p),1,p),p)
 
-def verify_quad_residue(x, a, p):
+# Функция для проверки квадратичного вычета
+def verifyQuadResidue(x, a, p):
     if(pow(pow(x,2,p),1,p) == pow(a,1,p)):
         print("Квадратичный вычет - найден")
-        print("{}^2 ≡ {} mod {}".format(x,pow(a,1,p),p))
+        print("{}^2 ≡ {} mod {}\n".format(x,pow(a,1,p),p))
     else: 
-        print("a - это квадратичный невычет, параметр был перегенирирован")
+        print("{} - это квадратичный невычет, параметр U был перегенирирован".format(a,1,p))
         return 1
 
+# Функция для отслеживания выполнения системы
 def verify_kg(k, g, U, x, Z, H, gamma):
     assert pow((k + g), 1, gamma) == pow(U,1, gamma)
     assert pow((k * g * H), 1, gamma) == pow((x * Z),1, gamma)
 
+# Расширенная функция GCD для вычисления деления по модулю (знаменатель)
 def egcd(a, b):
     if a == 0:
         return (b, 0, 1)
@@ -185,39 +167,30 @@ def egcd(a, b):
         g, x, y = egcd(b % a, a)
         return (g, y - (b // a) * x, x)
 
+# Обратный элемент в кольце (знаменатель)
 def inverse(element, module) -> int:
     return pow(egcd(element, module)[1], 1, module)
 
 def init():
-    countBits = 22
-
-    #Получение значения гаммы
+    countBits = 7
+    #Получение значения гаммы и p
     [gamma,p] = getStrongPrime(countBits)
 
-    # gamma = 187266130527359358103409790533
-    # gamma =  6263
-    # p =  36337927
-    # p = 1188242948802635102242772106637989280357
     print("gamma = ", gamma)
     print("p = ", p)
 
     #Выберем секретный ключ X
     x = randrange(1,p-1)
-    # x = 12345678900987654321
     print("x = ", x)
 
     #Выберем случайный хеш сообшения
     h = randrange(1,p-1)
-    # h = 13123123123154123152123
     print("h = ", h)
 
     # Выбираем значение альфа
     # а - число, относящееся к некоторому простому показателю гамма по модулю p
-    # то есть нужно выбрать такое a, которое в степени gamma по модулю p будет давать 1 
     a = getA(gamma,p)
-    # a = 682502200821353544223897742429626534895
     print("a = ", a)
-    # print("a =============", pow(a,gamma.))
 
     # Вычисляем открытый ключ
     y = getOpenKey(a, x, p)
@@ -225,17 +198,16 @@ def init():
 
     # Вычисляем значение U
     U = getU(p)
-    # U = getrandbits(countBits)
-    # U = 13894564231549754238457865456
     print("U = ", U)
     
     # Вычисляем значение Z
     Z = getZ(a, U, p)
     print("Z = ", Z)
 
+    print("\nИдёт вычисление параметра k...")
     expression = pow(pow(pow(h,2,gamma)*pow(U,2,gamma),1,gamma) - pow(4*h*x*Z,1,gamma),1,gamma)
     sqrtModValue = getSqrtMod(expression, gamma)
-    while verify_quad_residue(sqrtModValue, expression, gamma):
+    while verifyQuadResidue(sqrtModValue, expression, gamma):
         U = getU(p)
         Z = getZ(a, U, p)
         expression = pow(pow(pow(h,2,gamma)*pow(U,2,gamma),1,gamma) - pow(4*h*x*Z,1,gamma),1,gamma)
@@ -254,17 +226,16 @@ def init():
     # Вычисляем значение S
     S = getS(a,g,p)
     print("S = ", S)
-
     print("Signature is (k,S) => ", k, S)
 
     # Проверка подписи...
     
     leftSideValue = getLeft(S, h, k, p, g)
-    print("Side 1st = ", leftSideValue)
+    print("Left Side = ", leftSideValue)
 
     rightSideValue = getRight(y,S,a,k,p,Z,h)
-    print("Side 2nd = ", rightSideValue)
+    print("Right Side = ", rightSideValue)
 
-    # print("DONE 1ST = ", pow(S,k*h,p))
-    # print("DONE 2ND = ",  pow(y,pow(S*pow(a,k,p),1,p),p))
+    # Невозможность нахождения секретного ключа
+    print("\nX*Z mod p = ", pow(x*Z,1,p))
 init()
