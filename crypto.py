@@ -46,14 +46,14 @@ def getStrongPrime(length):
     s = generatePrimeNum(length)
     t = generatePrimeNum(length)
 
-    i = 100
+    i = 1
     r = 0
     while not MR_Test(r):
         r = 2 * i * t + 1
         i+=1
     p0 = 2 * pow(s, r-2, r) * s - 1
 
-    j = 100
+    j = 1
     p = 0
     while not MR_Test(p):
         p = p0 + 2*j*r*s
@@ -88,7 +88,6 @@ def getStrongPrime(length):
 #     #################
 
 def getSqrtMod(a, p):
-    print("AAAAAAAAAAAAAAA=",a);
     R1 = pow(a,(p-1)//2,p)
     S = (p-1)//2
     R2 = 1
@@ -128,7 +127,6 @@ def getSqrtMod(a, p):
     Z=Z//2
     x=pow(pow(a,S,p)*pow(b,Z,p),1,p)
 
-    print("XXXXXXXXXXXXXX=",x);
     return x
 
 
@@ -150,8 +148,9 @@ def getA(gamma, p):
 def getZ(a, U, p):
     return pow(a, U, p)
 
-def getK(U, h, x, Z, gamma):
-    return pow((pow(h*U,1,gamma) + getSqrtMod(pow(pow(h,2,gamma)*pow(U,2,gamma),1,gamma) - pow(4*h*x*Z,1,gamma), gamma)) * inverse(2*h,gamma),1,gamma)
+def getK(U, h, x, Z, gamma, sqrtModValue):
+    print("Идёт вычисление параметра k...")
+    return pow((pow(h*U,1,gamma) - sqrtModValue) * inverse(2*h,gamma),1,gamma)
 
 def getG(U,k,gamma):
     return pow(U-k,1,gamma)
@@ -167,11 +166,16 @@ def getRight(y,S,a,k,p,Z,h):
     # return pow(Z*h,1,p)
     return pow(y,pow(S*pow(a,k,p),1,p),p)
 
+def verify_quad_residue(x, a, p):
+    if(pow(pow(x,2,p),1,p) == pow(a,1,p)):
+        print("Квадратичный вычет - найден")
+        print("{}^2 ≡ {} mod {}".format(x,pow(a,1,p),p))
+    else: 
+        print("a - это квадратичный невычет, параметр был перегенирирован")
+        return 1
+
 def verify_kg(k, g, U, x, Z, H, gamma):
     assert pow((k + g), 1, gamma) == pow(U,1, gamma)
-
-    # print("pow((k * g * H), 1, gamma) = ", pow((k * g * H), 1, gamma))
-    # print("pow((x * Z),1, gamma) = ", pow((x * Z),1, gamma))
     assert pow((k * g * H), 1, gamma) == pow((x * Z),1, gamma)
 
 def egcd(a, b):
@@ -185,12 +189,14 @@ def inverse(element, module) -> int:
     return pow(egcd(element, module)[1], 1, module)
 
 def init():
-    countBits = 10
+    countBits = 22
 
     #Получение значения гаммы
     [gamma,p] = getStrongPrime(countBits)
 
     # gamma = 187266130527359358103409790533
+    # gamma =  6263
+    # p =  36337927
     # p = 1188242948802635102242772106637989280357
     print("gamma = ", gamma)
     print("p = ", p)
@@ -227,8 +233,16 @@ def init():
     Z = getZ(a, U, p)
     print("Z = ", Z)
 
+    expression = pow(pow(pow(h,2,gamma)*pow(U,2,gamma),1,gamma) - pow(4*h*x*Z,1,gamma),1,gamma)
+    sqrtModValue = getSqrtMod(expression, gamma)
+    while verify_quad_residue(sqrtModValue, expression, gamma):
+        U = getU(p)
+        Z = getZ(a, U, p)
+        expression = pow(pow(pow(h,2,gamma)*pow(U,2,gamma),1,gamma) - pow(4*h*x*Z,1,gamma),1,gamma)
+        sqrtModValue = getSqrtMod(expression, gamma)
+
     # Вычисляем значение k
-    k = getK(U, h, x, Z, gamma)
+    k = getK(U, h, x, Z, gamma, sqrtModValue)
     print("k = ", k)
 
     # Вычисляем значение g
@@ -250,7 +264,6 @@ def init():
 
     rightSideValue = getRight(y,S,a,k,p,Z,h)
     print("Side 2nd = ", rightSideValue)
-
 
     # print("DONE 1ST = ", pow(S,k*h,p))
     # print("DONE 2ND = ",  pow(y,pow(S*pow(a,k,p),1,p),p))
