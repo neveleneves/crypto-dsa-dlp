@@ -2,19 +2,15 @@ from random import randrange, getrandbits
 
 #Тест Миллера - Рабина
 def MR_Test(n, k=128):
-    # Если число 2 или 3, то сразу простое
     if n == 2 or n == 3:
         return True
-    # Если 1 или чётное, то число составное
     if n <= 1 or n % 2 == 0:
         return False
-    # Находим r и s
     s = 0
     r = n - 1
     while r % 2 == 0:
         s += 1
         r //= 2
-    # Делаем заданное количество раундов для проверки числа
     for _ in range(k):
         a = randrange(2, n - 1)
         x = pow(a, r, n)
@@ -109,17 +105,22 @@ def getOpenKey(a, x, p):
 
 # Выбираем значение U
 def getU(p):
-    return randrange(p-1)
+    return randrange(p)
 
 # Выбираем значение альфа
 def getA(gamma, p):
     print("\nИдёт вычисление параметра а...")
-    a=2
-    m=0
-    while not m==1:
-        a+=1
-        m = pow(a,gamma,p)
-    return a
+    b = 0
+    gammaCheck = 0
+    z = 0
+
+    while 1:
+        b = randrange(2, p)
+        gammaCheck = (p-1)//gamma
+        z = pow(b,gammaCheck,p) 
+
+        if not z==1:
+            return z
 
 # Вычисляем значение Z
 def getZ(a, U, p):
@@ -138,11 +139,11 @@ def getS(a,g,p):
     return pow(a,g,p)
 
 # Вычисляем левую часть проверочного сравнения
-def getLeft(S, h, k, p, g):
+def getLeft(S, h, k, p):
     return pow(S, h*k, p)  
 
 # Вычисляем правую часть проверочного сравнения
-def getRight(y,S,a,k,p,Z,h):
+def getRight(y,S,a,k,p):
     return pow(y,pow(S*pow(a,k,p),1,p),p)
 
 # Функция для проверки квадратичного вычета
@@ -159,7 +160,7 @@ def verify_kg(k, g, U, x, Z, H, gamma):
     assert pow((k + g), 1, gamma) == pow(U,1, gamma)
     assert pow((k * g * H), 1, gamma) == pow((x * Z),1, gamma)
 
-# Расширенная функция GCD для вычисления деления по модулю (знаменатель)
+# Расширенная функция Евклида для вычисления деления по модулю (знаменатель)
 def egcd(a, b):
     if a == 0:
         return (b, 0, 1)
@@ -172,7 +173,8 @@ def inverse(element, module) -> int:
     return pow(egcd(element, module)[1], 1, module)
 
 def init():
-    countBits = 7
+    countBits = 512
+
     #Получение значения гаммы и p
     [gamma,p] = getStrongPrime(countBits)
 
@@ -183,10 +185,6 @@ def init():
     x = randrange(1,p-1)
     print("x = ", x)
 
-    #Выберем случайный хеш сообшения
-    h = randrange(1,p-1)
-    print("h = ", h)
-
     # Выбираем значение альфа
     # а - число, относящееся к некоторому простому показателю гамма по модулю p
     a = getA(gamma,p)
@@ -196,8 +194,12 @@ def init():
     y = getOpenKey(a, x, p)
     print("y = ", y)
 
+    # Выберем случайный хеш сообшения
+    h = randrange(1,p-1)
+    print("h = ", h)
+
     # Вычисляем значение U
-    U = getU(p)
+    U = getU(gamma)
     print("U = ", U)
     
     # Вычисляем значение Z
@@ -226,14 +228,14 @@ def init():
     # Вычисляем значение S
     S = getS(a,g,p)
     print("S = ", S)
-    print("Signature is (k,S) => ", k, S)
+    print("\nSignature is (k,S) => ", k, S)
 
     # Проверка подписи...
     
-    leftSideValue = getLeft(S, h, k, p, g)
-    print("Left Side = ", leftSideValue)
+    leftSideValue = getLeft(S, h, k, p)
+    print("\nLeft Side = ", leftSideValue)
 
-    rightSideValue = getRight(y,S,a,k,p,Z,h)
+    rightSideValue = getRight(y,S,a,k,p)
     print("Right Side = ", rightSideValue)
 
     # Невозможность нахождения секретного ключа
